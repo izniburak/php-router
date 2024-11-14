@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @Package: Router - simple router class for php
  * @Class  : Router
@@ -396,7 +397,8 @@ class Router
                     $methodVar = strtolower(preg_replace('%([a-z]|[0-9])([A-Z])%', '\1-\2', $methodVar));
 
                     if ((!empty($only) && !in_array($methodVar, $only))
-                        || (!empty($except) && in_array($methodVar, $except))) {
+                        || (!empty($except) && in_array($methodVar, $except))
+                    ) {
                         continue;
                     }
 
@@ -591,8 +593,11 @@ class Router
     protected function routerCommand(): RouterCommand
     {
         return RouterCommand::getInstance(
-            $this->baseFolder, $this->paths, $this->namespaces,
-            $this->request(), $this->response(),
+            $this->baseFolder,
+            $this->paths,
+            $this->namespaces,
+            $this->request(),
+            $this->response(),
             $this->getMiddlewares()
         );
     }
@@ -646,6 +651,25 @@ class Router
         $this->cacheFile = $params['cache'] ?? realpath(__DIR__ . '/../cache.php');
     }
 
+    protected function controllerPaths($dir)
+    {
+        $root = scandir($dir, 1);
+        foreach ($root as $value) {
+
+            if ($value === '.' || $value === '..') {
+                continue;
+            }
+            if (is_file("$dir/$value")) {
+                $result[] = "$dir/$value";
+                continue;
+            }
+            foreach ($this->controllerPaths("$dir/$value") as $value) {
+                $result[] = $value;
+            }
+        }
+        return $result;
+    }
+
     /**
      * @param string $controller
      *
@@ -667,7 +691,17 @@ class Router
 
         $file = realpath("{$this->paths['controllers']}/{$controller}.php");
         if (!file_exists($file)) {
-            $this->exception("{$controller} class is not found! Please check the file.");
+            // Search for Controller Path
+            $controllerPaths = preg_grep(
+                "/$controller/",
+                $this->controllerPaths($this->paths['controllers'])
+            );
+            $controllerPath = $controllerPaths ? array_values($controllerPaths)[0] : null;
+            $file = $controllerPath ? realpath($controllerPath) : $file;
+
+            if (!file_exists($file)) {
+                $this->exception("{$controller} class is not found! Please check the file.");
+            }
         }
 
         $controller = $this->namespaces['controllers'] . str_replace('/', '\\', $controller);
@@ -725,7 +759,9 @@ class Router
         $callback = is_array($callback) ? implode('@', $callback) : $callback;
         $routeName = is_string($callback)
             ? strtolower(preg_replace(
-                '/[^\w]/i', '.', str_replace($this->namespaces['controllers'], '', $callback)
+                '/[^\w]/i',
+                '.',
+                str_replace($this->namespaces['controllers'], '', $callback)
             ))
             : null;
         $data = [
