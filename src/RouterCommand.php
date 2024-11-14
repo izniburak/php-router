@@ -55,8 +55,7 @@ class RouterCommand
         Request  $request,
         Response $response,
         array    $middlewares
-    )
-    {
+    ) {
         $this->baseFolder = $baseFolder;
         $this->paths = $paths;
         $this->namespaces = $namespaces;
@@ -68,7 +67,6 @@ class RouterCommand
         foreach ($this->middlewares['middlewares'] as $middleware) {
             $this->beforeAfter($middleware);
         }
-
     }
 
     /**
@@ -110,12 +108,15 @@ class RouterCommand
         Request  $request,
         Response $response,
         array    $middlewares
-    ): ?RouterCommand
-    {
+    ): ?RouterCommand {
         if (null === self::$instance) {
             self::$instance = new static(
-                $baseFolder, $paths, $namespaces,
-                $request, $response, $middlewares
+                $baseFolder,
+                $paths,
+                $namespaces,
+                $request,
+                $response,
+                $middlewares
             );
         }
 
@@ -214,6 +215,26 @@ class RouterCommand
         return $this->runMethodWithParams($command, $params);
     }
 
+
+    protected function controllerPaths($dir)
+    {
+        $root = scandir($dir, 1);
+        foreach ($root as $value) {
+
+            if ($value === '.' || $value === '..') {
+                continue;
+            }
+            if (is_file("$dir/$value")) {
+                $result[] = "$dir/$value";
+                continue;
+            }
+            foreach ($this->controllerPaths("$dir/$value") as $value) {
+                $result[] = $value;
+            }
+        }
+        return $result;
+    }
+
     /**
      * Resolve Controller or Middleware class.
      *
@@ -229,7 +250,17 @@ class RouterCommand
         $class = str_replace([$namespace, '\\'], ['', '/'], $class);
         $file = realpath("{$path}/{$class}.php");
         if (!file_exists($file)) {
-            $this->exception("{$class} class is not found. Please check the file.");
+            // Search for Controller Path
+            $controllerPaths = preg_grep(
+                "/$class/",
+                $this->controllerPaths($path)
+            );
+            $controllerPath = $controllerPaths ? array_values($controllerPaths)[0] : null;
+            $file = $controllerPath ? realpath($controllerPath) : $file;
+
+            if (!file_exists($file)) {
+                $this->exception("{$class} class is not found. Please check the file.");
+            }
         }
 
         $class = $namespace . str_replace('/', '\\', $class);
