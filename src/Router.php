@@ -115,7 +115,7 @@ class Router
      * @param Request|null $request
      * @param Response|null $response
      */
-    public function __construct(array $params = [], Request $request = null, Response $response = null)
+    public function __construct(array $params = [], ?Request $request = null, ?Response $response = null)
     {
         $this->baseFolder = realpath(getcwd());
 
@@ -234,7 +234,7 @@ class Router
      * @return mixed
      * @throws
      */
-    public function pattern(array|string $pattern, string $attr = null)
+    public function pattern(array|string $pattern, ?string $attr = null)
     {
         if (is_array($pattern)) {
             foreach ($pattern as $key => $value) {
