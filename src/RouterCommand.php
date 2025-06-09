@@ -4,6 +4,7 @@ namespace Buki\Router;
 
 use Closure;
 use Exception;
+use JetBrains\PhpStorm\NoReturn;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -14,40 +15,22 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RouterCommand
 {
-    /** @var RouterCommand Class instance variable */
-    protected static $instance = null;
+    protected static ?RouterCommand $instance = null;
 
-    /** @var string */
     protected string $baseFolder;
 
-    /** @var array */
     protected array $paths;
 
-    /** @var array */
     protected array $namespaces;
 
-    /** @var Request */
     protected Request $request;
 
-    /** @var Response */
     protected Response $response;
 
-    /** @var array */
     protected array $middlewares = [];
 
-    /** @var array */
     protected array $markedMiddlewares = [];
 
-    /**
-     * RouterCommand constructor.
-     *
-     * @param string $baseFolder
-     * @param array $paths
-     * @param array $namespaces
-     * @param Request $request
-     * @param Response $response
-     * @param array $middlewares
-     */
     public function __construct(
         string   $baseFolder,
         array    $paths,
@@ -71,9 +54,6 @@ class RouterCommand
 
     }
 
-    /**
-     * @return array
-     */
     public function getMiddlewareInfo(): array
     {
         return [
@@ -82,9 +62,6 @@ class RouterCommand
         ];
     }
 
-    /**
-     * @return array
-     */
     public function getControllerInfo(): array
     {
         return [
@@ -93,16 +70,6 @@ class RouterCommand
         ];
     }
 
-    /**
-     * @param string $baseFolder
-     * @param array $paths
-     * @param array $namespaces
-     * @param Request $request
-     * @param Response $response
-     * @param array $middlewares
-     *
-     * @return RouterCommand
-     */
     public static function getInstance(
         string   $baseFolder,
         array    $paths,
@@ -127,7 +94,6 @@ class RouterCommand
      *
      * @param $command
      *
-     * @return mixed|void
      * @throws
      */
     public function beforeAfter($command)
@@ -164,64 +130,53 @@ class RouterCommand
 
             return $this->runMiddleware($command, $resolvedMiddleware, $params, $info);
         }
-
-        return;
     }
 
     /**
      * Run Route Command; Controller or Closure
      *
-     * @param string|Closure $command
-     * @param array $params
-     *
-     * @return mixed
      * @throws Exception
      */
     public function runRoute(string|Closure $command, array $params = []): mixed
     {
         $info = $this->getControllerInfo();
-        if (!is_object($command)) {
-            $invokable = !str_contains($command, '@');
-            $class = $command;
-            if (!$invokable) {
-                [$class, $method] = explode('@', $command);
-            }
-
-            $class = str_replace([$info['namespace'], '\\', '.'], ['', '/', '/'], $class);
-
-            $controller = $this->resolveClass($class, $info['path'], $info['namespace']);
-            if (!$invokable && !method_exists($controller, $method)) {
-                $this->exception("{$method} method is not found in {$class} class.");
-            }
-
-            if (property_exists($controller, 'middlewareBefore') && is_array($controller->middlewareBefore)) {
-                foreach ($controller->middlewareBefore as $middleware) {
-                    $this->beforeAfter($middleware);
-                }
-            }
-
-            $response = $this->runMethodWithParams([$controller, (!$invokable ? $method : '__invoke')], $params);
-
-            if (property_exists($controller, 'middlewareAfter') && is_array($controller->middlewareAfter)) {
-                foreach ($controller->middlewareAfter as $middleware) {
-                    $this->beforeAfter($middleware);
-                }
-            }
-
-            return $response;
+        if (is_object($command)) {
+            return $this->runMethodWithParams($command, $params);
         }
 
-        return $this->runMethodWithParams($command, $params);
+        $invokable = !str_contains($command, '@');
+        $class = $command;
+        if (!$invokable) {
+            [$class, $method] = explode('@', $command);
+        }
+
+        $class = str_replace([$info['namespace'], '\\', '.'], ['', '/', '/'], $class);
+
+        $controller = $this->resolveClass($class, $info['path'], $info['namespace']);
+        if (!$invokable && !method_exists($controller, $method)) {
+            $this->exception("{$method} method is not found in {$class} class.");
+        }
+
+        if (property_exists($controller, 'middlewareBefore') && is_array($controller->middlewareBefore)) {
+            foreach ($controller->middlewareBefore as $middleware) {
+                $this->beforeAfter($middleware);
+            }
+        }
+
+        $response = $this->runMethodWithParams([$controller, (!$invokable ? $method : '__invoke')], $params);
+
+        if (property_exists($controller, 'middlewareAfter') && is_array($controller->middlewareAfter)) {
+            foreach ($controller->middlewareAfter as $middleware) {
+                $this->beforeAfter($middleware);
+            }
+        }
+
+        return $response;
     }
 
     /**
      * Resolve Controller or Middleware class.
      *
-     * @param string $class
-     * @param string $path
-     * @param string $namespace
-     *
-     * @return object
      * @throws Exception
      */
     protected function resolveClass(string $class, string $path, string $namespace): object
@@ -241,13 +196,9 @@ class RouterCommand
     }
 
     /**
-     * @param array|Closure $function
-     * @param array $params
-     *
-     * @return Response|mixed
      * @throws ReflectionException
      */
-    protected function runMethodWithParams(array|Closure $function, array $params): mixed
+    protected function runMethodWithParams(array|Closure $function, array $params): Response
     {
         $reflection = is_array($function)
             ? new ReflectionMethod($function[0], $function[1])
@@ -258,10 +209,6 @@ class RouterCommand
     }
 
     /**
-     * @param Reflector $reflection
-     * @param array $uriParams
-     *
-     * @return array
      * @throws
      */
     protected function resolveCallbackParameters(Reflector $reflection, array $uriParams): array
@@ -291,16 +238,10 @@ class RouterCommand
     }
 
     /**
-     * @param string $command
-     * @param string $middleware
-     * @param array $params
-     * @param array $info
-     *
-     * @return bool|void
      * @throws ReflectionException
      * @throws Exception
      */
-    protected function runMiddleware(string $command, string $middleware, array $params, array $info)
+    protected function runMiddleware(string $command, string $middleware, array $params, array $info): bool
     {
         $middlewareMethod = 'handle'; // For now, it's constant.
         $controller = $this->resolveClass($middleware, $info['path'], $info['namespace']);
@@ -324,11 +265,6 @@ class RouterCommand
         return true;
     }
 
-    /**
-     * @param string $middleware
-     *
-     * @return array|string
-     */
     protected function resolveMiddleware(string $middleware): array|string
     {
         $middlewares = $this->middlewares;
@@ -344,12 +280,7 @@ class RouterCommand
         return $middleware;
     }
 
-    /**
-     * @param $response
-     *
-     * @return Response|mixed
-     */
-    public function sendResponse($response): mixed
+    public function sendResponse($response): Response|string|int
     {
         if (is_array($response) || str_contains($this->request->headers->get('Accept') ?? '', 'application/json')) {
             $this->response->headers->set('Content-Type', 'application/json');
@@ -359,7 +290,7 @@ class RouterCommand
         }
 
         if (!is_string($response)) {
-            return $response instanceof Response ? $response->send() : print($response);
+            return $response instanceof Response ? $response->send() : print_r($response, true);
         }
 
         return $this->response->setContent($response)->send();
@@ -368,12 +299,10 @@ class RouterCommand
     /**
      * Throw new Exception for Router Error
      *
-     * @param string $message
-     * @param int $statusCode
-     *
      * @throws Exception
      */
-    protected function exception(string $message = '', int $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR)
+    #[NoReturn]
+    protected function exception(string $message = '', int $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR): void
     {
         throw new RouterException($message, $statusCode);
     }

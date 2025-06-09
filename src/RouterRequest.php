@@ -7,59 +7,33 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RouterRequest
 {
-    /** @var string $validMethods Valid methods for Router */
     protected string $validMethods = 'GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH|ANY|AJAX|XGET|XPOST|XPUT|XDELETE|XPATCH';
 
-    /** @var Request $request */
     private Request $request;
 
-    /** @var Response $response */
     private Response $response;
 
-    /**
-     * RouterRequest constructor.
-     *
-     * @param Request $request
-     * @param Response $response
-     */
     public function __construct(Request $request, Response $response)
     {
         $this->request = $request;
         $this->response = $response;
     }
 
-    /**
-     * @return Request
-     */
     public function symfonyRequest(): Request
     {
         return $this->request;
     }
 
-    /**
-     * @return Response
-     */
     public function symfonyResponse(): Response
     {
         return $this->response;
     }
 
-    /**
-     * @return string
-     */
     public function validMethods(): string
     {
         return $this->validMethods;
     }
 
-    /**
-     * Request method validation
-     *
-     * @param string $data
-     * @param string $method
-     *
-     * @return bool
-     */
     public function validMethod(string $data, string $method): bool
     {
         $valid = false;
@@ -79,8 +53,6 @@ class RouterRequest
 
     /**
      * Get the request method used, taking overrides into account
-     *
-     * @return string
      */
     public function getMethod(): string
     {
@@ -95,11 +67,6 @@ class RouterRequest
 
     /**
      * check method valid
-     *
-     * @param string $value
-     * @param string $method
-     *
-     * @return bool
      */
     protected function checkMethods(string $value, string $method): bool
     {

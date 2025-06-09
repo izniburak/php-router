@@ -12,6 +12,7 @@ namespace Buki\Router;
 
 use Closure;
 use Exception;
+use JetBrains\PhpStorm\NoReturn;
 use ReflectionMethod;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +41,7 @@ use Symfony\Component\HttpFoundation\Response;
 class Router
 {
     /** Router Version */
-    const VERSION = '3.0.0';
+    const VERSION = '3.1.0';
 
     /** @var string $baseFolder Base folder of the project */
     protected string $baseFolder;
@@ -112,8 +113,8 @@ class Router
      * Router constructor method.
      *
      * @param array $params
-     * @param Request|null $request
-     * @param Response|null $response
+     * @param ?Request $request
+     * @param ?Response $response
      */
     public function __construct(array $params = [], ?Request $request = null, ?Response $response = null)
     {
@@ -148,13 +149,9 @@ class Router
      * Add route method;
      * Get, Post, Put, Delete, Patch, Any, Ajax...
      *
-     * @param $method
-     * @param $params
-     *
-     * @return mixed
      * @throws
      */
-    public function __call($method, $params)
+    public function __call($method, $params): bool|Router
     {
         if ($this->cacheLoaded) {
             return true;
@@ -200,21 +197,14 @@ class Router
 
     /**
      * Add new route method one or more http methods.
-     *
-     * @param string $methods
-     * @param string $route
-     * @param string|array|closure $callback
-     * @param array $options
-     *
-     * @return void
      */
-    public function add(string $methods, string $route, $callback, array $options = []): void
+    public function add(string $methods, string $route, array|string|Closure $callback, array $options = []): void
     {
         if ($this->cacheLoaded) {
             return;
         }
 
-        if (strstr($methods, '|')) {
+        if (str_contains($methods, '|')) {
             foreach (array_unique(explode('|', $methods)) as $method) {
                 if (!empty($method)) {
                     $this->addRoute($route, $method, $callback, $options);
@@ -228,13 +218,9 @@ class Router
     /**
      * Add new route rules pattern; String or Array
      *
-     * @param array|string $pattern
-     * @param string|null $attr
-     *
-     * @return mixed
      * @throws
      */
-    public function pattern(array|string $pattern, ?string $attr = null)
+    public function pattern(array|string $pattern, ?string $attr = null): void
     {
         if (is_array($pattern)) {
             foreach ($pattern as $key => $value) {
@@ -249,14 +235,11 @@ class Router
             }
             $this->patterns[$pattern] = '(' . $attr . ')';
         }
-
-        return true;
     }
 
     /**
      * Run Routes
      *
-     * @return void
      * @throws
      */
     public function run(): void
@@ -283,7 +266,7 @@ class Router
                     break;
 
                     // Parameter Route Match
-                } elseif (strstr($route, ':') !== false) {
+                } elseif (str_contains($route, ':')) {
                     $route = str_replace($searches, $replaces, $route);
                     if (preg_match('#^' . $route . '$#', $uri, $matched)) {
                         $foundRoute = true;
@@ -296,7 +279,7 @@ class Router
                         }, $matched);
 
                         foreach ($data['groups'] as $group) {
-                            if (strstr($group, ':') !== false) {
+                            if (str_contains($group, ':')) {
                                 array_shift($matched);
                             }
                         }
@@ -332,12 +315,6 @@ class Router
 
     /**
      * Routes Group
-     *
-     * @param string $prefix
-     * @param Closure $callback
-     * @param array $options
-     *
-     * @return bool
      */
     public function group(string $prefix, Closure $callback, array $options = []): bool
     {
@@ -350,7 +327,7 @@ class Router
         $group['before'] = $this->calculateMiddleware($options['before'] ?? []);
         $group['after'] = $this->calculateMiddleware($options['after'] ?? []);
 
-        array_push($this->groups, $group);
+        $this->groups[] = $group;
 
         call_user_func_array($callback, [$this]);
 
@@ -360,13 +337,8 @@ class Router
     }
 
     /**
-     * Added route from methods of Controller file.
+     * Added route from methods of a Controller file.
      *
-     * @param string $route
-     * @param string $controller
-     * @param array $options
-     *
-     * @return void
      * @throws
      */
     public function controller(string $route, string $controller, array $options = []): void
@@ -424,11 +396,7 @@ class Router
     }
 
     /**
-     * Routes Not Found Error function.
-     *
-     * @param Closure $callback
-     *
-     * @return void
+     * Not Found Error function.
      */
     public function notFound(Closure $callback): void
     {
@@ -437,10 +405,6 @@ class Router
 
     /**
      * Routes exception errors function.
-     *
-     * @param Closure $callback
-     *
-     * @return void
      */
     public function error(Closure $callback): void
     {
@@ -449,9 +413,8 @@ class Router
 
     /**
      * Display all Routes.
-     *
-     * @return void
      */
+    #[NoReturn]
     public function getList(): void
     {
         $routes = var_export($this->getRoutes(), true);
@@ -460,8 +423,6 @@ class Router
 
     /**
      * Get all Routes
-     *
-     * @return array
      */
     public function getRoutes(): array
     {
@@ -470,8 +431,6 @@ class Router
 
     /**
      * Cache all routes
-     *
-     * @return bool
      *
      * @throws Exception
      */
@@ -493,10 +452,6 @@ class Router
 
     /**
      * Set general middlewares
-     *
-     * @param array $middlewares
-     *
-     * @return void
      */
     public function setMiddleware(array $middlewares): void
     {
@@ -505,10 +460,6 @@ class Router
 
     /**
      * Set Route middlewares
-     *
-     * @param array $middlewares
-     *
-     * @return void
      */
     public function setRouteMiddleware(array $middlewares): void
     {
@@ -517,10 +468,6 @@ class Router
 
     /**
      * Set middleware groups
-     *
-     * @param array $middlewareGroup
-     *
-     * @return void
      */
     public function setMiddlewareGroup(array $middlewareGroup): void
     {
@@ -529,8 +476,6 @@ class Router
 
     /**
      * Get All Middlewares
-     *
-     * @return array
      */
     public function getMiddlewares(): array
     {
@@ -543,28 +488,17 @@ class Router
 
     /**
      * Detect Routes Middleware; before or after
-     *
-     * @param array $middleware
-     * @param string $type
-     *
-     * @return void
      */
     protected function runRouteMiddleware(array $middleware, string $type): void
     {
         $this->routerCommand()->beforeAfter($middleware[$type]);
     }
 
-    /**
-     * @return Request
-     */
     protected function request(): Request
     {
         return $this->request->symfonyRequest();
     }
 
-    /**
-     * @return Response
-     */
     protected function response(): Response
     {
         return $this->request->symfonyResponse();
@@ -573,20 +507,16 @@ class Router
     /**
      * Throw new Exception for Router Error
      *
-     * @param string $message
-     * @param int $statusCode
-     *
      * @throws Exception
      */
-    protected function exception(string $message = '', int $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR)
+    #[NoReturn]
+    protected function exception(string $message = '', int $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR): void
     {
         throw new RouterException($message, $statusCode);
     }
 
     /**
      * RouterCommand class
-     *
-     * @return RouterCommand
      */
     protected function routerCommand(): RouterCommand
     {
@@ -599,10 +529,6 @@ class Router
 
     /**
      * Set paths and namespaces for Controllers and Middlewares.
-     *
-     * @param array $params
-     *
-     * @return void
      */
     protected function setPaths(array $params): void
     {
@@ -647,12 +573,9 @@ class Router
     }
 
     /**
-     * @param string $controller
-     *
-     * @return RouterException|string
      * @throws Exception
      */
-    protected function resolveClassName(string $controller)
+    protected function resolveClassName(string $controller): string
     {
         $controller = str_replace([$this->namespaces['controllers'], '\\', '.'], ['', '/', '/'], $controller);
         $controller = trim(
@@ -680,8 +603,6 @@ class Router
 
     /**
      * Load Cache file
-     *
-     * @return bool
      */
     protected function loadCache(): bool
     {
@@ -696,15 +617,8 @@ class Router
 
     /**
      * Add new Route and it's settings
-     *
-     * @param string $uri
-     * @param string $method
-     * @param string|array|Closure $callback
-     * @param array|null $options
-     *
-     * @return void
      */
-    protected function addRoute(string $uri, string $method, $callback, ?array $options = null)
+    protected function addRoute(string $uri, string $method, string|array|Closure $callback, ?array $options = null): void
     {
         $groupUri = '';
         $groupStack = [];
@@ -725,7 +639,7 @@ class Router
         $callback = is_array($callback) ? implode('@', $callback) : $callback;
         $routeName = is_string($callback)
             ? strtolower(preg_replace(
-                '/[^\w]/i', '.', str_replace($this->namespaces['controllers'], '', $callback)
+                '/\W/i', '.', str_replace($this->namespaces['controllers'], '', $callback)
             ))
             : null;
         $data = [
@@ -740,11 +654,6 @@ class Router
         array_unshift($this->routes, $data);
     }
 
-    /**
-     * @param array|string|null $middleware
-     *
-     * @return array
-     */
     protected function calculateMiddleware(array|string|null $middleware): array
     {
         if (is_null($middleware)) {
@@ -756,42 +665,27 @@ class Router
 
     /**
      * Run Route Command; Controller or Closure
-     *
-     * @param $command
-     * @param array $params
-     *
-     * @return void
      * @throws Exception
      */
-    protected function runRouteCommand($command, array $params = []): void
+    protected function runRouteCommand(string|Closure $command, array $params = []): void
     {
         $this->routerCommand()->runRoute($command, $params);
     }
 
     /**
      * Routes Group endpoint
-     *
-     * @return void
      */
     protected function endGroup(): void
     {
         array_pop($this->groups);
     }
 
-    /**
-     * @param string $route
-     *
-     * @return string
-     */
     protected function clearRouteName(string $route = ''): string
     {
         $route = trim(preg_replace('~/{2,}~', '/', $route), '/');
         return $route === '' ? '/' : "/{$route}";
     }
 
-    /**
-     * @return string
-     */
     protected function getRequestUri(): string
     {
         $script = $this->request()->server->get('SCRIPT_FILENAME') ?? $this->request()->server->get('SCRIPT_NAME');
