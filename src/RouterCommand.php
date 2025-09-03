@@ -198,7 +198,7 @@ class RouterCommand
     /**
      * @throws ReflectionException
      */
-    protected function runMethodWithParams(array|Closure $function, array $params): Response
+    protected function runMethodWithParams(array|Closure $function, array $params): Response|string|int
     {
         $reflection = is_array($function)
             ? new ReflectionMethod($function[0], $function[1])
