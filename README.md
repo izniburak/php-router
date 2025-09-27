@@ -1,13 +1,15 @@
 ## Router
-```
-  _____  _    _ _____             _____             _            
- |  __ \| |  | |  __ \           |  __ \           | |           
- | |__) | |__| | |__) |  ______  | |__) |___  _   _| |_ ___ _ __
- |  ___/|  __  |  ___/  |______| |  _  // _ \| | | | __/ _ \ '__|
- | |    | |  | | |               | | \ \ (_) | |_| | ||  __/ |   
- |_|    |_|  |_|_|               |_|  \_\___/ \__,_|\__\___|_|   
 
 ```
+  _____  _    _ _____             _____             _
+ |  __ \| |  | |  __ \           |  __ \           | |
+ | |__) | |__| | |__) |  ______  | |__) |___  _   _| |_ ___ _ __
+ |  ___/|  __  |  ___/  |______| |  _  // _ \| | | | __/ _ \ '__|
+ | |    | |  | | |               | | \ \ (_) | |_| | ||  __/ |
+ |_|    |_|  |_|_|               |_|  \_\___/ \__,_|\__\___|_|
+
+```
+
 **PHP Router**, which also has rich features like Middlewares and Controllers is simple and useful router class for PHP.
 
 ![Tests](https://github.com/izniburak/php-router/actions/workflows/run-tests.yml/badge.svg)
@@ -17,6 +19,7 @@
 [![License](https://poser.pugx.org/izniburak/router/license.svg)](https://packagist.org/packages/izniburak/router)
 
 ### Features
+
 - Supports GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD, AJAX and ANY request methods
 - Easy access and manage Request and Response via `symfony/http-foundation` package.
 - Controllers support (Example: HomeController@about)
@@ -39,19 +42,23 @@ $ composer require izniburak/router
 ```
 
 OR you can add following lines into the `composer.json` file manually:
+
 ```json
 {
-    "require": {
-        "izniburak/router": "^2.0"
-    }
+  "require": {
+    "izniburak/router": "^3.0"
+  }
 }
 ```
+
 Then, run the following command:
+
 ```
 $ composer install
 ```
 
 ## Example Usage
+
 ```php
 require 'vendor/autoload.php';
 
@@ -80,16 +87,19 @@ $router->run();
 ```
 
 ## Docs
+
 Documentation page: [Buki\Router Docs][doc-url]
 
 Changelogs: [Buki\Router Changelogs][changelog-url]
 
 ## Support
+
 [izniburak's homepage][author-url]
 
 [izniburak's twitter][twitter-url]
 
 ## Licence
+
 [MIT Licence][mit-url]
 
 ## Contributing
